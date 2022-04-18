@@ -1,24 +1,32 @@
 package pl.edu.agh.mwo.invoice;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import pl.edu.agh.mwo.invoice.Invoice;
+import org.mockito.Mockito;
 import pl.edu.agh.mwo.invoice.product.DairyProduct;
 import pl.edu.agh.mwo.invoice.product.OtherProduct;
 import pl.edu.agh.mwo.invoice.product.Product;
 import pl.edu.agh.mwo.invoice.product.TaxFreeProduct;
+
+import static org.mockito.Mockito.*;
 
 public class InvoiceTest {
     private Invoice invoice;
 
     @Before
     public void createEmptyInvoiceForTheTest() {
-        invoice = new Invoice();
+        InvoiceNumberGenerator generator = mock(StaticInvoiceNumberGenerator.class);
+        when(generator.getNextNumber()).thenReturn(1L);
+        invoice = new Invoice(generator);
     }
 
     @Test
@@ -125,4 +133,60 @@ public class InvoiceTest {
     public void testAddingNullProduct() {
         invoice.addProduct(null);
     }
+
+    @Test
+    public void testAddingSameProductTwoTimes() {
+
+        Product product = new DairyProduct("Zsiadle mleko", new BigDecimal("5.55"));
+
+        invoice.addProduct(product);
+        invoice.addProduct(product);
+
+        Map<Product, Integer> actual = invoice.getProducts();
+        Map<Product, Integer> expected = new HashMap<>();
+        expected.put(product, 2);
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getListToPrintEmpty() {
+        List<String> listToPrint = invoice.getListToPrint();
+        List<String> expected = new ArrayList<>();
+        expected.add("Invoice no. 1");
+        expected.add("Number of elements: 0");
+
+        Assert.assertEquals(expected, listToPrint);
+    }
+
+    @Test
+    public void getListToPrintWithOneElement() {
+        invoice.addProduct(new TaxFreeProduct("Chleb", new BigDecimal("5")), 2);
+
+        List<String> listToPrint = invoice.getListToPrint();
+        List<String> expected = new ArrayList<>();
+        expected.add("Invoice no. 1");
+        expected.add("Chleb; 2; 5");
+        expected.add("Number of elements: 1");
+
+        Assert.assertEquals(expected, listToPrint);
+
+    }
+
+    @Test
+    public void getListToPrintWithMultiElements() {
+        invoice.addProduct(new TaxFreeProduct("Kubek", new BigDecimal("5")), 2);
+        invoice.addProduct(new DairyProduct("Kozi Serek", new BigDecimal("10")), 3);
+
+        List<String> listToPrint = invoice.getListToPrint();
+        List<String> expected = new ArrayList<>();
+        expected.add("Invoice no. 1");
+        expected.add("Kubek; 2; 5");
+        expected.add("Kozi Serek; 3; 10.80");
+        expected.add("Number of elements: 2");
+
+        Assert.assertEquals(expected, listToPrint);
+
+    }
+
 }

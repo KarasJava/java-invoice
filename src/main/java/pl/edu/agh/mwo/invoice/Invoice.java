@@ -1,13 +1,25 @@
 package pl.edu.agh.mwo.invoice;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import pl.edu.agh.mwo.invoice.product.Product;
 
 public class Invoice {
 
-    private Map<Product, Integer> products = new HashMap<>();
+    private final long invoiceNumber;
+    private final Map<Product, Integer> products = new LinkedHashMap<>();
+
+    public Invoice(InvoiceNumberGenerator generator) {
+        this.invoiceNumber = generator.getNextNumber();
+    }
+
+    public Map<Product, Integer> getProducts() {
+        return Collections.unmodifiableMap(products);
+    }
 
     public void addProduct(Product product) {
         if (product == null) {
@@ -15,9 +27,9 @@ public class Invoice {
         }
 
         if (!products.containsKey(product)) {
-            products.put(product, 1);
+            addProduct(product, 1);
         } else {
-            products.put(product, products.get(product) + 1);
+            addProduct(product, products.get(product) + 1);
         }
     }
 
@@ -66,4 +78,23 @@ public class Invoice {
         return getNetTotal().add(getTaxTotal());
 
     }
+
+    public List<String> getListToPrint() {
+        List<String> printList = new ArrayList<>();
+
+        printList.add("Invoice no. " + invoiceNumber);
+
+        for (Product product : products.keySet()) {
+            String line = product.getName() + "; "
+                    + products.get(product) + "; "
+                    + product.getPriceWithTax();
+
+            printList.add(line);
+        }
+
+        printList.add("Number of elements: " + products.size());
+
+        return Collections.unmodifiableList(printList);
+    }
+
 }
